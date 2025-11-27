@@ -1274,7 +1274,15 @@
                     carSpeed *= 0.95; // Desaceleração
                 }
 
-                moveSpeed = Math.abs(carSpeed);
+                // Rotação do carro com A/D
+                if (keys['a']) {
+                    mouseX -= 0.03; // Virar para a esquerda
+                }
+                if (keys['d']) {
+                    mouseX += 0.03; // Virar para a direita
+                }
+
+                moveSpeed = carSpeed; // Usar velocidade com direção
 
                 // Atualizar velocímetro
                 const speedKmh = Math.floor(Math.abs(carSpeed) * 100);
@@ -1286,25 +1294,34 @@
 
             const oldPosition = player.position.clone();
 
-            if (keys['w']) {
-                player.position.x -= Math.sin(mouseX) * moveSpeed;
-                player.position.z -= Math.cos(mouseX) * moveSpeed;
-                moving = true;
-            }
-            if (keys['s']) {
-                player.position.x += Math.sin(mouseX) * moveSpeed;
-                player.position.z += Math.cos(mouseX) * moveSpeed;
-                moving = true;
-            }
-            if (keys['a']) {
-                player.position.x -= Math.cos(mouseX) * moveSpeed;
-                player.position.z += Math.sin(mouseX) * moveSpeed;
-                moving = true;
-            }
-            if (keys['d']) {
-                player.position.x += Math.cos(mouseX) * moveSpeed;
-                player.position.z -= Math.sin(mouseX) * moveSpeed;
-                moving = true;
+            if (isInCar) {
+                // Controle do carro (apenas W/S movem)
+                if (keys['w'] || keys['s']) {
+                    player.position.x -= Math.sin(mouseX) * moveSpeed;
+                    player.position.z -= Math.cos(mouseX) * moveSpeed;
+                }
+            } else {
+                // Controle do jogador a pé
+                if (keys['w']) {
+                    player.position.x -= Math.sin(mouseX) * moveSpeed;
+                    player.position.z -= Math.cos(mouseX) * moveSpeed;
+                    moving = true;
+                }
+                if (keys['s']) {
+                    player.position.x += Math.sin(mouseX) * moveSpeed;
+                    player.position.z += Math.cos(mouseX) * moveSpeed;
+                    moving = true;
+                }
+                if (keys['a']) {
+                    player.position.x -= Math.cos(mouseX) * moveSpeed;
+                    player.position.z += Math.sin(mouseX) * moveSpeed;
+                    moving = true;
+                }
+                if (keys['d']) {
+                    player.position.x += Math.cos(mouseX) * moveSpeed;
+                    player.position.z -= Math.sin(mouseX) * moveSpeed;
+                    moving = true;
+                }
             }
 
             // Limitar área de movimento
@@ -1345,7 +1362,7 @@
 
             if (!isInCar) {
                 playerVoxel.position.copy(player.position);
-                playerVoxel.rotation.y = -mouseX;
+                playerVoxel.rotation.y = mouseX;
 
                 // Animação de caminhada
                 if (moving) {
@@ -1363,7 +1380,7 @@
                 }
             } else if (currentCar) {
                 currentCar.mesh.position.copy(player.position);
-                currentCar.mesh.rotation.y = -mouseX;
+                currentCar.mesh.rotation.y = mouseX;
             }
 
             // Verificar coleta/entrega
