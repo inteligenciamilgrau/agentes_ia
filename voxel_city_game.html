@@ -444,51 +444,56 @@
 
         // ==================== CIDADE ====================
         function createCity() {
+            // Ruas: x/z = -60, -30, 0, 30, 60 (largura 8)
+            // Quarteirões seguros: longe das ruas
             const buildingPositions = [
-                // Quarteirão 1 (entre x:-90/-64, z:-90/-64)
+                // Linha 1: Norte (z: -85 a -70)
                 { x: -80, z: -80 }, { x: -75, z: -75 }, { x: -70, z: -80 },
-                // Quarteirão 2 (entre x:-56/-34, z:-90/-64)
                 { x: -50, z: -80 }, { x: -45, z: -75 }, { x: -40, z: -80 },
-                // Quarteirão 3 (entre x:-26/-4, z:-90/-64)
                 { x: -20, z: -80 }, { x: -15, z: -75 }, { x: -10, z: -80 },
-                // Quarteirão 4 (entre x:4/26, z:-90/-64)
                 { x: 10, z: -80 }, { x: 15, z: -75 }, { x: 20, z: -80 },
-                // Quarteirão 5 (entre x:34/56, z:-90/-64)
                 { x: 40, z: -80 }, { x: 45, z: -75 }, { x: 50, z: -80 },
-                // Quarteirão 6 (entre x:64/90, z:-90/-64)
                 { x: 70, z: -80 }, { x: 75, z: -75 }, { x: 80, z: -80 },
 
-                // Linha 2 de quarteirões
-                // Quarteirão 7 (entre x:-90/-64, z:-56/-34)
-                { x: -80, z: -50 }, { x: -75, z: -45 }, { x: -70, z: -50 },
-                // Quarteirão 8 (entre x:-56/-34, z:-56/-34)
-                { x: -50, z: -50 }, { x: -45, z: -45 }, { x: -40, z: -50 },
-                // Quarteirão 9 (entre x:-26/-4, z:-56/-34)
-                { x: -20, z: -50 }, { x: -15, z: -45 }, { x: -10, z: -50 },
-                // Quarteirão 10 (entre x:4/26, z:-56/-34)
-                { x: 10, z: -50 }, { x: 15, z: -45 }, { x: 20, z: -50 },
-                // Quarteirão 11 (entre x:34/56, z:-56/-34)
-                { x: 40, z: -50 }, { x: 45, z: -45 }, { x: 50, z: -50 },
-                // Quarteirão 12 (entre x:64/90, z:-56/-34)
-                { x: 70, z: -50 }, { x: 75, z: -45 }, { x: 80, z: -50 },
+                // Linha 2: (z: -55 a -40)
+                { x: -80, z: -50 }, { x: -75, z: -48 }, { x: -70, z: -45 },
+                { x: -50, z: -50 }, { x: -45, z: -48 }, { x: -40, z: -45 },
+                { x: -20, z: -50 }, { x: -15, z: -48 }, { x: -10, z: -45 },
+                { x: 10, z: -50 }, { x: 15, z: -48 }, { x: 20, z: -45 },
+                { x: 40, z: -50 }, { x: 45, z: -48 }, { x: 50, z: -45 },
+                { x: 70, z: -50 }, { x: 75, z: -48 }, { x: 80, z: -45 },
 
-                // Linha 3 de quarteirões (centro)
-                { x: -80, z: -20 }, { x: -75, z: -15 }, { x: -50, z: -20 },
-                { x: -20, z: -20 }, { x: -15, z: -15 }, { x: 10, z: -20 },
-                { x: 40, z: -20 }, { x: 45, z: -15 }, { x: 70, z: -20 },
+                // Linha 3: Centro (z: -25 a -10)
+                { x: -80, z: -20 }, { x: -75, z: -18 }, { x: -70, z: -15 },
+                { x: -50, z: -20 }, { x: -45, z: -18 }, { x: -40, z: -15 },
+                { x: -20, z: -20 }, { x: -15, z: -18 }, { x: -10, z: -15 },
+                { x: 10, z: -20 }, { x: 15, z: -18 }, { x: 20, z: -15 },
+                { x: 40, z: -20 }, { x: 45, z: -18 }, { x: 50, z: -15 },
+                { x: 70, z: -20 }, { x: 75, z: -18 }, { x: 80, z: -15 },
 
-                // Linha 4
-                { x: -80, z: 10 }, { x: -75, z: 15 }, { x: -50, z: 10 },
-                { x: -20, z: 10 }, { x: -15, z: 15 }, { x: 10, z: 10 },
-                { x: 40, z: 10 }, { x: 45, z: 15 }, { x: 70, z: 10 },
+                // Linha 4: (z: 10 a 25)
+                { x: -80, z: 10 }, { x: -75, z: 12 }, { x: -70, z: 15 },
+                { x: -50, z: 10 }, { x: -45, z: 12 }, { x: -40, z: 15 },
+                { x: -20, z: 10 }, { x: -15, z: 12 }, { x: -10, z: 15 },
+                { x: 10, z: 10 }, { x: 15, z: 12 }, { x: 20, z: 15 },
+                { x: 40, z: 10 }, { x: 45, z: 12 }, { x: 50, z: 15 },
+                { x: 70, z: 10 }, { x: 75, z: 12 }, { x: 80, z: 15 },
 
-                // Linha 5 (sul)
-                { x: -80, z: 40 }, { x: -75, z: 45 }, { x: -70, z: 50 },
-                { x: -50, z: 40 }, { x: -45, z: 45 }, { x: -40, z: 50 },
-                { x: -20, z: 40 }, { x: -15, z: 45 }, { x: -10, z: 50 },
-                { x: 10, z: 40 }, { x: 15, z: 45 }, { x: 20, z: 50 },
-                { x: 40, z: 40 }, { x: 45, z: 45 }, { x: 50, z: 50 },
-                { x: 70, z: 40 }, { x: 75, z: 45 }, { x: 80, z: 50 }
+                // Linha 5: Sul (z: 40 a 55)
+                { x: -80, z: 40 }, { x: -75, z: 42 }, { x: -70, z: 45 },
+                { x: -50, z: 40 }, { x: -45, z: 42 }, { x: -40, z: 45 },
+                { x: -20, z: 40 }, { x: -15, z: 42 }, { x: -10, z: 45 },
+                { x: 10, z: 40 }, { x: 15, z: 42 }, { x: 20, z: 45 },
+                { x: 40, z: 40 }, { x: 45, z: 42 }, { x: 50, z: 45 },
+                { x: 70, z: 40 }, { x: 75, z: 42 }, { x: 80, z: 45 },
+
+                // Linha 6: Extremo sul (z: 70 a 85)
+                { x: -80, z: 70 }, { x: -75, z: 75 }, { x: -70, z: 80 },
+                { x: -50, z: 70 }, { x: -45, z: 75 }, { x: -40, z: 80 },
+                { x: -20, z: 70 }, { x: -15, z: 75 }, { x: -10, z: 80 },
+                { x: 10, z: 70 }, { x: 15, z: 75 }, { x: 20, z: 80 },
+                { x: 40, z: 70 }, { x: 45, z: 75 }, { x: 50, z: 80 },
+                { x: 70, z: 70 }, { x: 75, z: 75 }, { x: 80, z: 80 }
             ];
 
             buildingPositions.forEach(pos => {
@@ -567,12 +572,12 @@
         // ==================== JOGADOR ====================
         function createPlayer() {
             playerVoxel = createPlayerVoxel();
-            playerVoxel.position.set(-45, 0, -45);
+            playerVoxel.position.set(-60, 0, -50);
             scene.add(playerVoxel);
 
             player = {
                 mesh: playerVoxel,
-                position: new THREE.Vector3(-45, 0, -45),
+                position: new THREE.Vector3(-60, 0, -50),
                 velocity: new THREE.Vector3(0, 0, 0),
                 speed: 0.15,
                 rotation: 0,
@@ -1907,8 +1912,8 @@
             document.getElementById('carStatus').style.display = 'none';
 
             // Resetar posição do jogador
-            player.position.set(-45, 0, -45);
-            playerVoxel.position.set(-45, 0, -45);
+            player.position.set(-60, 0, -50);
+            playerVoxel.position.set(-60, 0, -50);
             playerVoxel.visible = true;
             mouseX = 0;
             mouseY = 0;
