@@ -368,30 +368,54 @@
         }
 
         function createSidewalks() {
-            const positions = [-64, -34, -4, 26, 56, 86];
+            const streetPositions = [-60, -30, 0, 30, 60];
+            const sidewalkWidth = 2.5;
+            const streetWidth = 8;
+            const offset = (streetWidth / 2) + (sidewalkWidth / 2);
 
-            positions.forEach((x, i) => {
-                if (i < positions.length - 1) {
-                    // Calçadas horizontais
-                    [-64, -34, -4, 26, 56].forEach(z => {
-                        const sidewalk = new THREE.Mesh(
-                            new THREE.BoxGeometry(positions[i + 1] - x - 8, 0.5, 3),
-                            new THREE.MeshLambertMaterial({ color: 0xcccccc })
-                        );
-                        sidewalk.position.set((x + positions[i + 1]) / 2, 0.25, z - 5.5);
-                        sidewalk.castShadow = true;
-                        sidewalk.receiveShadow = true;
-                        scene.add(sidewalk);
+            // Calçadas ao longo das ruas horizontais
+            streetPositions.forEach(z => {
+                // Calçada no lado sul (z-)
+                for (let x = -95; x <= 95; x += 30) {
+                    const sidewalk = new THREE.Mesh(
+                        new THREE.BoxGeometry(28, 0.5, sidewalkWidth),
+                        new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+                    );
+                    sidewalk.position.set(x, 0.25, z - offset);
+                    scene.add(sidewalk);
+                }
 
-                        const sidewalk2 = new THREE.Mesh(
-                            new THREE.BoxGeometry(positions[i + 1] - x - 8, 0.5, 3),
-                            new THREE.MeshLambertMaterial({ color: 0xcccccc })
-                        );
-                        sidewalk2.position.set((x + positions[i + 1]) / 2, 0.25, z + 5.5);
-                        sidewalk2.castShadow = true;
-                        sidewalk2.receiveShadow = true;
-                        scene.add(sidewalk2);
-                    });
+                // Calçada no lado norte (z+)
+                for (let x = -95; x <= 95; x += 30) {
+                    const sidewalk = new THREE.Mesh(
+                        new THREE.BoxGeometry(28, 0.5, sidewalkWidth),
+                        new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+                    );
+                    sidewalk.position.set(x, 0.25, z + offset);
+                    scene.add(sidewalk);
+                }
+            });
+
+            // Calçadas ao longo das ruas verticais
+            streetPositions.forEach(x => {
+                // Calçada no lado oeste (x-)
+                for (let z = -95; z <= 95; z += 30) {
+                    const sidewalk = new THREE.Mesh(
+                        new THREE.BoxGeometry(sidewalkWidth, 0.5, 28),
+                        new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+                    );
+                    sidewalk.position.set(x - offset, 0.25, z);
+                    scene.add(sidewalk);
+                }
+
+                // Calçada no lado leste (x+)
+                for (let z = -95; z <= 95; z += 30) {
+                    const sidewalk = new THREE.Mesh(
+                        new THREE.BoxGeometry(sidewalkWidth, 0.5, 28),
+                        new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+                    );
+                    sidewalk.position.set(x + offset, 0.25, z);
+                    scene.add(sidewalk);
                 }
             });
         }
@@ -741,26 +765,91 @@
             const group = new THREE.Group();
             group.position.set(x, 0, z);
 
-            // Poste
-            const pole = createVoxel(0, 3, 0, 0.4, 0x444444);
-            pole.scale.set(1, 8, 1);
+            // Base do poste
+            const base = new THREE.Mesh(
+                new THREE.BoxGeometry(0.8, 0.3, 0.8),
+                new THREE.MeshLambertMaterial({ color: 0x333333 })
+            );
+            base.position.set(0, 0.15, 0);
+            group.add(base);
+
+            // Poste principal (mais grosso e alto)
+            const pole = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.15, 5, 8),
+                new THREE.MeshLambertMaterial({ color: 0x222222 })
+            );
+            pole.position.set(0, 2.5, 0);
             group.add(pole);
 
-            // Caixa do semáforo
-            const box = createVoxel(0, 6, 0, 1.2, 0x333333);
-            box.scale.set(0.8, 1.5, 0.6);
+            // Braço horizontal
+            const arm = new THREE.Mesh(
+                new THREE.BoxGeometry(1.5, 0.2, 0.2),
+                new THREE.MeshLambertMaterial({ color: 0x222222 })
+            );
+            arm.position.set(0.75, 5, 0);
+            group.add(arm);
+
+            // Caixa do semáforo (maior e mais bonita)
+            const box = new THREE.Mesh(
+                new THREE.BoxGeometry(0.8, 2.4, 0.6),
+                new THREE.MeshLambertMaterial({ color: 0x1a1a1a })
+            );
+            box.position.set(1.5, 4.5, 0);
             group.add(box);
 
-            // Luzes
-            const redLight = createVoxel(0, 6.8, 0.4, 0.5, 0x440000);
+            // Borda da caixa
+            const border = new THREE.Mesh(
+                new THREE.BoxGeometry(0.85, 2.5, 0.65),
+                new THREE.MeshLambertMaterial({ color: 0xffdd00 })
+            );
+            border.position.set(1.5, 4.5, -0.05);
+            group.add(border);
+
+            // Viseira superior
+            const visor = new THREE.Mesh(
+                new THREE.BoxGeometry(0.9, 0.1, 0.8),
+                new THREE.MeshLambertMaterial({ color: 0x222222 })
+            );
+            visor.position.set(1.5, 5.75, 0.2);
+            visor.rotation.x = -0.3;
+            group.add(visor);
+
+            // Luz vermelha (maior)
+            const redLight = new THREE.Mesh(
+                new THREE.CircleGeometry(0.3, 16),
+                new THREE.MeshBasicMaterial({
+                    color: 0x440000,
+                    transparent: true,
+                    opacity: 0.9
+                })
+            );
+            redLight.position.set(1.5, 5.3, 0.31);
             redLight.name = 'red';
             group.add(redLight);
 
-            const yellowLight = createVoxel(0, 6, 0.4, 0.5, 0x444400);
+            // Luz amarela (maior)
+            const yellowLight = new THREE.Mesh(
+                new THREE.CircleGeometry(0.3, 16),
+                new THREE.MeshBasicMaterial({
+                    color: 0x444400,
+                    transparent: true,
+                    opacity: 0.9
+                })
+            );
+            yellowLight.position.set(1.5, 4.5, 0.31);
             yellowLight.name = 'yellow';
             group.add(yellowLight);
 
-            const greenLight = createVoxel(0, 5.2, 0.4, 0.5, 0x004400);
+            // Luz verde (maior)
+            const greenLight = new THREE.Mesh(
+                new THREE.CircleGeometry(0.3, 16),
+                new THREE.MeshBasicMaterial({
+                    color: 0x004400,
+                    transparent: true,
+                    opacity: 0.9
+                })
+            );
+            greenLight.position.set(1.5, 3.7, 0.31);
             greenLight.name = 'green';
             group.add(greenLight);
 
@@ -1276,10 +1365,10 @@
 
                 // Rotação do carro com A/D
                 if (keys['a']) {
-                    mouseX -= 0.03; // Virar para a esquerda
+                    mouseX += 0.03; // Virar para a esquerda
                 }
                 if (keys['d']) {
-                    mouseX += 0.03; // Virar para a direita
+                    mouseX -= 0.03; // Virar para a direita
                 }
 
                 moveSpeed = carSpeed; // Usar velocidade com direção
@@ -1480,18 +1569,22 @@
                 }
 
                 const redLight = light.mesh.getObjectByName('red');
+                const yellowLight = light.mesh.getObjectByName('yellow');
                 const greenLight = light.mesh.getObjectByName('green');
 
                 if (redLight) {
                     redLight.material.color.setHex(light.state === 'red' ? 0xff0000 : 0x440000);
-                    redLight.material.emissive.setHex(light.state === 'red' ? 0xff0000 : 0x000000);
-                    redLight.material.emissiveIntensity = light.state === 'red' ? 0.8 : 0;
+                    redLight.material.opacity = light.state === 'red' ? 1 : 0.3;
+                }
+
+                if (yellowLight) {
+                    yellowLight.material.color.setHex(0xffaa00);
+                    yellowLight.material.opacity = 0.3;
                 }
 
                 if (greenLight) {
                     greenLight.material.color.setHex(light.state === 'green' ? 0x00ff00 : 0x004400);
-                    greenLight.material.emissive.setHex(light.state === 'green' ? 0x00ff00 : 0x000000);
-                    greenLight.material.emissiveIntensity = light.state === 'green' ? 0.8 : 0;
+                    greenLight.material.opacity = light.state === 'green' ? 1 : 0.3;
                 }
             });
         }
