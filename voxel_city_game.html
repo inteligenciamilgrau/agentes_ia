@@ -137,24 +137,18 @@
             // Configurar renderizador
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.shadowMap.enabled = false; // Desabilitado para otimização
             document.body.appendChild(renderer.domElement);
 
-            // Luz ambiente
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            // Luz ambiente (ajustada para compensar ausência de sombras)
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            ambientLight.name = 'ambientLight';
             scene.add(ambientLight);
 
             // Sol (luz direcional)
             sun = new THREE.DirectionalLight(0xffffcc, 0.8);
             sun.position.set(50, 100, 50);
-            sun.castShadow = true;
-            sun.shadow.camera.left = -100;
-            sun.shadow.camera.right = 100;
-            sun.shadow.camera.top = 100;
-            sun.shadow.camera.bottom = -100;
-            sun.shadow.mapSize.width = 2048;
-            sun.shadow.mapSize.height = 2048;
+            sun.castShadow = false;
             scene.add(sun);
 
             // Lua
@@ -193,13 +187,13 @@
         }
 
         // ==================== CRIAÇÃO DE VOXELS ====================
-        function createVoxel(x, y, z, size, color) {
+        function createVoxel(x, y, z, size, color, shadows = false) {
             const geometry = new THREE.BoxGeometry(size, size, size);
             const material = new THREE.MeshLambertMaterial({ color: color });
             const voxel = new THREE.Mesh(geometry, material);
             voxel.position.set(x, y, z);
-            voxel.castShadow = true;
-            voxel.receiveShadow = true;
+            voxel.castShadow = shadows;
+            voxel.receiveShadow = shadows;
             return voxel;
         }
 
@@ -385,69 +379,54 @@
                 new THREE.MeshLambertMaterial({ color: color })
             );
             building.position.set(x, height / 2, z);
-            building.castShadow = true;
-            building.receiveShadow = true;
+            building.castShadow = false; // Otimização
+            building.receiveShadow = false;
             scene.add(building);
 
-            // Janelas
+            // Janelas (reduzidas para otimização)
             const windowSize = 1.2;
-            const windowSpacing = 2.5;
-            const floors = Math.floor(height / 3);
+            const windowSpacing = 3.5;
+            const floors = Math.floor(height / 4);
+
+            // Material compartilhado para janelas
+            const windowMaterial = new THREE.MeshLambertMaterial({
+                color: 0xffffaa,
+                emissive: 0xffffaa,
+                emissiveIntensity: 0.2
+            });
 
             for (let floor = 1; floor < floors; floor++) {
-                const y = floor * 3;
+                const y = floor * 4;
 
-                // Janelas na frente
-                for (let i = -Math.floor(width / 5); i <= Math.floor(width / 5); i++) {
-                    const window1 = new THREE.Mesh(
-                        new THREE.BoxGeometry(windowSize, windowSize, 0.2),
-                        new THREE.MeshLambertMaterial({
-                            color: 0xffffaa,
-                            emissive: 0xffffaa,
-                            emissiveIntensity: 0.3
-                        })
-                    );
-                    window1.position.set(x + i * windowSpacing, y, z + depth / 2 + 0.1);
-                    scene.add(window1);
+                // Janelas na frente (reduzidas)
+                for (let i = -Math.floor(width / 7); i <= Math.floor(width / 7); i++) {
+                    if (i % 2 === 0) {
+                        const window1 = new THREE.Mesh(
+                            new THREE.BoxGeometry(windowSize, windowSize, 0.2),
+                            windowMaterial
+                        );
+                        window1.position.set(x + i * windowSpacing, y, z + depth / 2 + 0.1);
+                        scene.add(window1);
+                    }
                 }
 
-                // Janelas atrás
-                for (let i = -Math.floor(width / 5); i <= Math.floor(width / 5); i++) {
-                    const window2 = new THREE.Mesh(
-                        new THREE.BoxGeometry(windowSize, windowSize, 0.2),
-                        new THREE.MeshLambertMaterial({
-                            color: 0xffffaa,
-                            emissive: 0xffffaa,
-                            emissiveIntensity: 0.3
-                        })
-                    );
-                    window2.position.set(x + i * windowSpacing, y, z - depth / 2 - 0.1);
-                    scene.add(window2);
-                }
+                // Janelas nas laterais (apenas algumas)
+                if (floor % 2 === 0) {
+                    for (let i = -1; i <= 1; i++) {
+                        const window3 = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.2, windowSize, windowSize),
+                            windowMaterial
+                        );
+                        window3.position.set(x + width / 2 + 0.1, y, z + i * windowSpacing);
+                        scene.add(window3);
 
-                // Janelas laterais
-                for (let i = -Math.floor(depth / 5); i <= Math.floor(depth / 5); i++) {
-                    const window3 = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.2, windowSize, windowSize),
-                        new THREE.MeshLambertMaterial({
-                            color: 0xffffaa,
-                            emissive: 0xffffaa,
-                            emissiveIntensity: 0.3
-                        })
-                    );
-                    window3.position.set(x + width / 2 + 0.1, y, z + i * windowSpacing);
-                    scene.add(window3);
-
-                    const window4 = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.2, windowSize, windowSize),
-                        new THREE.MeshLambertMaterial({
-                            color: 0xffffaa,
-                            emissive: 0xffffaa,
-                            emissiveIntensity: 0.3
-                        })
-                    );
-                    window4.position.set(x - width / 2 - 0.1, y, z + i * windowSpacing);
-                    scene.add(window4);
+                        const window4 = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.2, windowSize, windowSize),
+                            windowMaterial
+                        );
+                        window4.position.set(x - width / 2 - 0.1, y, z + i * windowSpacing);
+                        scene.add(window4);
+                    }
                 }
             }
 
@@ -720,23 +699,24 @@
         function createStreetLights() {
             const positions = [];
 
-            // Postes ao longo das ruas
-            for (let x = -80; x <= 80; x += 20) {
-                for (let z = -80; z <= 80; z += 20) {
+            // Postes ao longo das ruas (reduzido para otimização)
+            for (let x = -80; x <= 80; x += 40) {
+                for (let z = -80; z <= 80; z += 40) {
                     if (Math.abs(x % 30) < 5 || Math.abs(z % 30) < 5) {
                         positions.push({ x, z });
                     }
                 }
             }
 
-            positions.forEach(pos => {
-                const light = createStreetLight(pos.x, pos.z);
+            // Limitar número de luzes pontuais
+            positions.forEach((pos, index) => {
+                const light = createStreetLight(pos.x, pos.z, index < 8);
                 scene.add(light);
                 streetLights.push(light);
             });
         }
 
-        function createStreetLight(x, z) {
+        function createStreetLight(x, z, addPointLight = false) {
             const group = new THREE.Group();
             group.position.set(x, 0, z);
 
@@ -755,11 +735,13 @@
             lamp.name = 'lamp';
             group.add(lamp);
 
-            // Luz pontual
-            const pointLight = new THREE.PointLight(0xffffaa, 0.5, 30);
-            pointLight.position.set(1.5, 7, 0);
-            pointLight.castShadow = true;
-            group.add(pointLight);
+            // Adicionar luz pontual apenas em alguns postes
+            if (addPointLight) {
+                const pointLight = new THREE.PointLight(0xffffaa, 0.5, 40);
+                pointLight.position.set(1.5, 7, 0);
+                pointLight.castShadow = false; // Desabilitar sombras para otimização
+                group.add(pointLight);
+            }
 
             return group;
         }
@@ -1230,6 +1212,9 @@
 
             const dayTime = Math.sin(dayNightCycle);
 
+            // Obter luz ambiente
+            const ambientLight = scene.getObjectByName('ambientLight');
+
             // Ajustar cor do céu
             if (dayTime > 0) {
                 // Dia
@@ -1237,6 +1222,7 @@
                 scene.background = new THREE.Color(0x87CEEB);
                 sun.intensity = 0.8;
                 moon.intensity = 0;
+                if (ambientLight) ambientLight.intensity = 0.7;
             } else {
                 // Noite
                 const nightness = Math.abs(dayTime);
@@ -1252,6 +1238,7 @@
                 );
                 sun.intensity = 0;
                 moon.intensity = 0.3;
+                if (ambientLight) ambientLight.intensity = 0.5; // Reduzir à noite
             }
 
             // Iluminar postes à noite
