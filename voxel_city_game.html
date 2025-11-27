@@ -125,7 +125,7 @@
         <div>Status: <span id="status">Procure o objeto!</span></div>
         <div id="carStatus" style="display:none;">No carro - ESPAÇO para sair</div>
     </div>
-    <div id="minimap"></div>
+    <div id="minimap" style="display:none;"></div>
     <div id="speedometer">
         <div class="gauge">
             <div class="gauge-needle" id="needle"></div>
@@ -1278,6 +1278,9 @@
                         bullets.splice(i, 1);
                         // Spawnar novo NPC
                         spawnNewNPC();
+                        // Bônus de tempo
+                        timeLeft += 5;
+                        showMessage('+5 segundos!');
                         break;
                     }
                 }
@@ -1297,6 +1300,9 @@
                         bullets.splice(i, 1);
                         // Spawnar novo carro
                         spawnNewCar();
+                        // Bônus de tempo
+                        timeLeft += 5;
+                        showMessage('+5 segundos!');
                         break;
                     }
                 }
@@ -1357,6 +1363,46 @@
                     explosions.splice(i, 1);
                 }
             }
+        }
+
+        // ==================== COLISÕES ====================
+        function checkCollision(newX, newZ) {
+            // Verificar colisão com prédios
+            for (let building of buildings) {
+                const halfWidth = building.width / 2;
+                const halfDepth = building.depth / 2;
+
+                if (newX > building.x - halfWidth - 2 &&
+                    newX < building.x + halfWidth + 2 &&
+                    newZ > building.z - halfDepth - 2 &&
+                    newZ < building.z + halfDepth + 2) {
+                    return true;
+                }
+            }
+
+            // Verificar colisão com postes de iluminação
+            for (let light of streetLights) {
+                const dist = Math.sqrt(
+                    Math.pow(newX - light.position.x, 2) +
+                    Math.pow(newZ - light.position.z, 2)
+                );
+                if (dist < 1.5) {
+                    return true;
+                }
+            }
+
+            // Verificar colisão com árvores
+            for (let tree of trees) {
+                const dist = Math.sqrt(
+                    Math.pow(newX - tree.position.x, 2) +
+                    Math.pow(newZ - tree.position.z, 2)
+                );
+                if (dist < 2) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         // ==================== RESPAWN ====================
@@ -1488,40 +1534,48 @@
             }
 
             const oldPosition = player.position.clone();
+            let newX = player.position.x;
+            let newZ = player.position.z;
 
             if (isInCar) {
                 // Controle do carro (apenas W/S movem)
                 if (keys['w'] || keys['s']) {
-                    player.position.x -= Math.sin(mouseX) * moveSpeed;
-                    player.position.z -= Math.cos(mouseX) * moveSpeed;
+                    newX -= Math.sin(mouseX) * moveSpeed;
+                    newZ -= Math.cos(mouseX) * moveSpeed;
                 }
             } else {
                 // Controle do jogador a pé
                 if (keys['w']) {
-                    player.position.x -= Math.sin(mouseX) * moveSpeed;
-                    player.position.z -= Math.cos(mouseX) * moveSpeed;
+                    newX -= Math.sin(mouseX) * moveSpeed;
+                    newZ -= Math.cos(mouseX) * moveSpeed;
                     moving = true;
                 }
                 if (keys['s']) {
-                    player.position.x += Math.sin(mouseX) * moveSpeed;
-                    player.position.z += Math.cos(mouseX) * moveSpeed;
+                    newX += Math.sin(mouseX) * moveSpeed;
+                    newZ += Math.cos(mouseX) * moveSpeed;
                     moving = true;
                 }
                 if (keys['a']) {
-                    player.position.x -= Math.cos(mouseX) * moveSpeed;
-                    player.position.z += Math.sin(mouseX) * moveSpeed;
+                    newX -= Math.cos(mouseX) * moveSpeed;
+                    newZ += Math.sin(mouseX) * moveSpeed;
                     moving = true;
                 }
                 if (keys['d']) {
-                    player.position.x += Math.cos(mouseX) * moveSpeed;
-                    player.position.z -= Math.sin(mouseX) * moveSpeed;
+                    newX += Math.cos(mouseX) * moveSpeed;
+                    newZ -= Math.sin(mouseX) * moveSpeed;
                     moving = true;
                 }
             }
 
             // Limitar área de movimento
-            player.position.x = Math.max(-95, Math.min(95, player.position.x));
-            player.position.z = Math.max(-95, Math.min(95, player.position.z));
+            newX = Math.max(-95, Math.min(95, newX));
+            newZ = Math.max(-95, Math.min(95, newZ));
+
+            // Verificar colisão e só mover se não houver colisão
+            if (!checkCollision(newX, newZ)) {
+                player.position.x = newX;
+                player.position.z = newZ;
+            }
 
             // Verificar atropelamento (apenas quando no carro)
             if (isInCar) {
@@ -1537,6 +1591,9 @@
                         npcs.splice(i, 1);
                         // Spawnar novo NPC
                         spawnNewNPC();
+                        // Bônus de tempo
+                        timeLeft += 5;
+                        showMessage('+5 segundos!');
                     }
                 }
 
@@ -1553,6 +1610,9 @@
                         cars.splice(i, 1);
                         // Spawnar novo carro
                         spawnNewCar();
+                        // Bônus de tempo
+                        timeLeft += 5;
+                        showMessage('+5 segundos!');
                     }
                 }
             }
@@ -1894,7 +1954,6 @@
             updateBullets();
             updateExplosions();
             updateCamera();
-            updateMinimap();
 
             renderer.render(scene, camera);
         }
