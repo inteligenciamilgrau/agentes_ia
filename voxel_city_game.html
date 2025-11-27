@@ -125,7 +125,7 @@
         <div>Status: <span id="status">Procure o objeto!</span></div>
         <div id="carStatus" style="display:none;">No carro - ESPAÇO para sair</div>
     </div>
-    <div id="minimap" style="display:none;"></div>
+    <div id="minimap"></div>
     <div id="speedometer">
         <div class="gauge">
             <div class="gauge-needle" id="needle"></div>
@@ -383,74 +383,112 @@
             const streetWidth = 8;
             const offset = (streetWidth / 2) + (sidewalkWidth / 2);
 
+            // Criar calçadas em segmentos entre interseções
+            const segments = [
+                { start: -90, end: -64 },
+                { start: -56, end: -34 },
+                { start: -26, end: -4 },
+                { start: 4, end: 26 },
+                { start: 34, end: 56 },
+                { start: 64, end: 90 }
+            ];
+
             // Calçadas ao longo das ruas horizontais
             streetPositions.forEach(z => {
-                // Calçada no lado sul (z-)
-                for (let x = -95; x <= 95; x += 30) {
-                    const sidewalk = new THREE.Mesh(
-                        new THREE.BoxGeometry(28, 0.5, sidewalkWidth),
-                        new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
-                    );
-                    sidewalk.position.set(x, 0.25, z - offset);
-                    scene.add(sidewalk);
-                }
+                segments.forEach(seg => {
+                    const length = seg.end - seg.start;
+                    const center = (seg.start + seg.end) / 2;
 
-                // Calçada no lado norte (z+)
-                for (let x = -95; x <= 95; x += 30) {
-                    const sidewalk = new THREE.Mesh(
-                        new THREE.BoxGeometry(28, 0.5, sidewalkWidth),
+                    // Calçada no lado sul (z-)
+                    const sidewalk1 = new THREE.Mesh(
+                        new THREE.BoxGeometry(length, 0.5, sidewalkWidth),
                         new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
                     );
-                    sidewalk.position.set(x, 0.25, z + offset);
-                    scene.add(sidewalk);
-                }
+                    sidewalk1.position.set(center, 0.25, z - offset);
+                    scene.add(sidewalk1);
+
+                    // Calçada no lado norte (z+)
+                    const sidewalk2 = new THREE.Mesh(
+                        new THREE.BoxGeometry(length, 0.5, sidewalkWidth),
+                        new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+                    );
+                    sidewalk2.position.set(center, 0.25, z + offset);
+                    scene.add(sidewalk2);
+                });
             });
 
             // Calçadas ao longo das ruas verticais
             streetPositions.forEach(x => {
-                // Calçada no lado oeste (x-)
-                for (let z = -95; z <= 95; z += 30) {
-                    const sidewalk = new THREE.Mesh(
-                        new THREE.BoxGeometry(sidewalkWidth, 0.5, 28),
-                        new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
-                    );
-                    sidewalk.position.set(x - offset, 0.25, z);
-                    scene.add(sidewalk);
-                }
+                segments.forEach(seg => {
+                    const length = seg.end - seg.start;
+                    const center = (seg.start + seg.end) / 2;
 
-                // Calçada no lado leste (x+)
-                for (let z = -95; z <= 95; z += 30) {
-                    const sidewalk = new THREE.Mesh(
-                        new THREE.BoxGeometry(sidewalkWidth, 0.5, 28),
+                    // Calçada no lado oeste (x-)
+                    const sidewalk3 = new THREE.Mesh(
+                        new THREE.BoxGeometry(sidewalkWidth, 0.5, length),
                         new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
                     );
-                    sidewalk.position.set(x + offset, 0.25, z);
-                    scene.add(sidewalk);
-                }
+                    sidewalk3.position.set(x - offset, 0.25, center);
+                    scene.add(sidewalk3);
+
+                    // Calçada no lado leste (x+)
+                    const sidewalk4 = new THREE.Mesh(
+                        new THREE.BoxGeometry(sidewalkWidth, 0.5, length),
+                        new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+                    );
+                    sidewalk4.position.set(x + offset, 0.25, center);
+                    scene.add(sidewalk4);
+                });
             });
         }
 
         // ==================== CIDADE ====================
         function createCity() {
             const buildingPositions = [
-                // Quarteirão 1
-                { x: -75, z: -75 }, { x: -50, z: -75 }, { x: -75, z: -50 },
-                // Quarteirão 2
-                { x: -15, z: -75 }, { x: 10, z: -75 }, { x: -15, z: -50 },
-                // Quarteirão 3
-                { x: 45, z: -75 }, { x: 70, z: -75 }, { x: 45, z: -50 },
-                // Quarteirão 4
-                { x: -75, z: -15 }, { x: -50, z: -15 }, { x: -75, z: 10 },
-                // Quarteirão 5
-                { x: -15, z: -15 }, { x: 10, z: -15 }, { x: -15, z: 10 },
-                // Quarteirão 6
-                { x: 45, z: -15 }, { x: 70, z: -15 }, { x: 45, z: 10 },
-                // Quarteirão 7
-                { x: -75, z: 45 }, { x: -50, z: 45 }, { x: -75, z: 70 },
-                // Quarteirão 8
-                { x: -15, z: 45 }, { x: 10, z: 45 }, { x: -15, z: 70 },
-                // Quarteirão 9
-                { x: 45, z: 45 }, { x: 70, z: 45 }, { x: 45, z: 70 }
+                // Quarteirão 1 (entre x:-90/-64, z:-90/-64)
+                { x: -80, z: -80 }, { x: -75, z: -75 }, { x: -70, z: -80 },
+                // Quarteirão 2 (entre x:-56/-34, z:-90/-64)
+                { x: -50, z: -80 }, { x: -45, z: -75 }, { x: -40, z: -80 },
+                // Quarteirão 3 (entre x:-26/-4, z:-90/-64)
+                { x: -20, z: -80 }, { x: -15, z: -75 }, { x: -10, z: -80 },
+                // Quarteirão 4 (entre x:4/26, z:-90/-64)
+                { x: 10, z: -80 }, { x: 15, z: -75 }, { x: 20, z: -80 },
+                // Quarteirão 5 (entre x:34/56, z:-90/-64)
+                { x: 40, z: -80 }, { x: 45, z: -75 }, { x: 50, z: -80 },
+                // Quarteirão 6 (entre x:64/90, z:-90/-64)
+                { x: 70, z: -80 }, { x: 75, z: -75 }, { x: 80, z: -80 },
+
+                // Linha 2 de quarteirões
+                // Quarteirão 7 (entre x:-90/-64, z:-56/-34)
+                { x: -80, z: -50 }, { x: -75, z: -45 }, { x: -70, z: -50 },
+                // Quarteirão 8 (entre x:-56/-34, z:-56/-34)
+                { x: -50, z: -50 }, { x: -45, z: -45 }, { x: -40, z: -50 },
+                // Quarteirão 9 (entre x:-26/-4, z:-56/-34)
+                { x: -20, z: -50 }, { x: -15, z: -45 }, { x: -10, z: -50 },
+                // Quarteirão 10 (entre x:4/26, z:-56/-34)
+                { x: 10, z: -50 }, { x: 15, z: -45 }, { x: 20, z: -50 },
+                // Quarteirão 11 (entre x:34/56, z:-56/-34)
+                { x: 40, z: -50 }, { x: 45, z: -45 }, { x: 50, z: -50 },
+                // Quarteirão 12 (entre x:64/90, z:-56/-34)
+                { x: 70, z: -50 }, { x: 75, z: -45 }, { x: 80, z: -50 },
+
+                // Linha 3 de quarteirões (centro)
+                { x: -80, z: -20 }, { x: -75, z: -15 }, { x: -50, z: -20 },
+                { x: -20, z: -20 }, { x: -15, z: -15 }, { x: 10, z: -20 },
+                { x: 40, z: -20 }, { x: 45, z: -15 }, { x: 70, z: -20 },
+
+                // Linha 4
+                { x: -80, z: 10 }, { x: -75, z: 15 }, { x: -50, z: 10 },
+                { x: -20, z: 10 }, { x: -15, z: 15 }, { x: 10, z: 10 },
+                { x: 40, z: 10 }, { x: 45, z: 15 }, { x: 70, z: 10 },
+
+                // Linha 5 (sul)
+                { x: -80, z: 40 }, { x: -75, z: 45 }, { x: -70, z: 50 },
+                { x: -50, z: 40 }, { x: -45, z: 45 }, { x: -40, z: 50 },
+                { x: -20, z: 40 }, { x: -15, z: 45 }, { x: -10, z: 50 },
+                { x: 10, z: 40 }, { x: 15, z: 45 }, { x: 20, z: 50 },
+                { x: 40, z: 40 }, { x: 45, z: 45 }, { x: 50, z: 50 },
+                { x: 70, z: 40 }, { x: 75, z: 45 }, { x: 80, z: 50 }
             ];
 
             buildingPositions.forEach(pos => {
@@ -1954,6 +1992,7 @@
             updateBullets();
             updateExplosions();
             updateCamera();
+            updateMinimap();
 
             renderer.render(scene, camera);
         }
