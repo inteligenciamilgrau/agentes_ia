@@ -134,9 +134,18 @@
         </div>
     </div>
     <div id="instructions">
-        WASD: Mover | Mouse: Olhar | Scroll: Zoom | ESPAÇO: Entrar/Sair | V: Mudar visão | E/Click: Atirar | ESC: Liberar mouse
+        WASD: Mover | Shift: Correr | Mouse: Olhar | Scroll: Zoom | ESPAÇO: Entrar/Sair | V: Mudar visão | E/Click: Atirar | ESC: Liberar mouse
     </div>
     <div id="message"></div>
+    <div id="gameOver" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; z-index:200;">
+        <div style="background:rgba(0,0,0,0.9); padding:40px; border-radius:20px; border:3px solid #fff;">
+            <h1 style="color:#ffff00; font-size:48px; margin-bottom:20px;">GAME OVER!</h1>
+            <p style="color:#fff; font-size:24px; margin-bottom:30px;">Pontuação Final: <span id="finalScore">0</span></p>
+            <button id="restartBtn" style="font-size:24px; padding:15px 40px; background:#00ff00; border:none; border-radius:10px; cursor:pointer; font-family:'Courier New', monospace; font-weight:bold;">
+                RECOMEÇAR
+            </button>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -237,6 +246,7 @@
             document.addEventListener('wheel', onMouseWheel);
             document.addEventListener('click', requestPointerLock);
             document.addEventListener('pointerlockchange', onPointerLockChange);
+            document.getElementById('restartBtn').addEventListener('click', restartGame);
 
             // Iniciar timer
             setInterval(updateTimer, 1000);
@@ -1266,6 +1276,8 @@
                         npcs.splice(j, 1);
                         scene.remove(bullet.mesh);
                         bullets.splice(i, 1);
+                        // Spawnar novo NPC
+                        spawnNewNPC();
                         break;
                     }
                 }
@@ -1280,8 +1292,11 @@
                         createExplosion(car.mesh.position);
                         car.exploded = true;
                         scene.remove(car.mesh);
+                        cars.splice(j, 1);
                         scene.remove(bullet.mesh);
                         bullets.splice(i, 1);
+                        // Spawnar novo carro
+                        spawnNewCar();
                         break;
                     }
                 }
@@ -1344,11 +1359,102 @@
             }
         }
 
+        // ==================== RESPAWN ====================
+        function spawnNewNPC() {
+            const walkPaths = [
+                { start: { x: -80, z: -60 }, end: { x: 80, z: -60 } },
+                { start: { x: -80, z: -30 }, end: { x: 80, z: -30 } },
+                { start: { x: -80, z: 0 }, end: { x: 80, z: 0 } },
+                { start: { x: -80, z: 30 }, end: { x: 80, z: 30 } },
+                { start: { x: -80, z: 60 }, end: { x: 80, z: 60 } },
+                { start: { x: -60, z: -80 }, end: { x: -60, z: 80 } },
+                { start: { x: -30, z: -80 }, end: { x: -30, z: 80 } },
+                { start: { x: 0, z: -80 }, end: { x: 0, z: 80 } },
+                { start: { x: 30, z: -80 }, end: { x: 30, z: 80 } },
+                { start: { x: 60, z: -80 }, end: { x: 60, z: 80 } }
+            ];
+
+            const path = walkPaths[Math.floor(Math.random() * walkPaths.length)];
+            const progress = Math.random();
+            const x = path.start.x + (path.end.x - path.start.x) * progress;
+            const z = path.start.z + (path.end.z - path.start.z) * progress;
+
+            const npcMesh = createNPCVoxel();
+            npcMesh.position.set(x, 0, z);
+            scene.add(npcMesh);
+
+            npcs.push({
+                mesh: npcMesh,
+                path: path,
+                progress: progress,
+                speed: 0.002 + Math.random() * 0.002,
+                forward: Math.random() > 0.5,
+                walkAnimation: Math.random() * Math.PI * 2
+            });
+        }
+
+        function spawnNewCar() {
+            const carPaths = [
+                { start: { x: -90, z: -62 }, end: { x: 90, z: -62 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: -58 }, end: { x: -90, z: -58 }, axis: 'x', lane: 'left' },
+                { start: { x: -90, z: -32 }, end: { x: 90, z: -32 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: -28 }, end: { x: -90, z: -28 }, axis: 'x', lane: 'left' },
+                { start: { x: -90, z: -2 }, end: { x: 90, z: -2 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: 2 }, end: { x: -90, z: 2 }, axis: 'x', lane: 'left' },
+                { start: { x: -90, z: 28 }, end: { x: 90, z: 28 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: 32 }, end: { x: -90, z: 32 }, axis: 'x', lane: 'left' },
+                { start: { x: -90, z: 58 }, end: { x: 90, z: 58 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: 62 }, end: { x: -90, z: 62 }, axis: 'x', lane: 'left' },
+                { start: { x: -62, z: -90 }, end: { x: -62, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: -58, z: 90 }, end: { x: -58, z: -90 }, axis: 'z', lane: 'left' },
+                { start: { x: -32, z: -90 }, end: { x: -32, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: -28, z: 90 }, end: { x: -28, z: -90 }, axis: 'z', lane: 'left' },
+                { start: { x: -2, z: -90 }, end: { x: -2, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: 2, z: 90 }, end: { x: 2, z: -90 }, axis: 'z', lane: 'left' },
+                { start: { x: 28, z: -90 }, end: { x: 28, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: 32, z: 90 }, end: { x: 32, z: -90 }, axis: 'z', lane: 'left' },
+                { start: { x: 58, z: -90 }, end: { x: 58, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: 62, z: 90 }, end: { x: 62, z: -90 }, axis: 'z', lane: 'left' }
+            ];
+
+            const path = carPaths[Math.floor(Math.random() * carPaths.length)];
+            const progress = Math.random();
+            const x = path.start.x + (path.end.x - path.start.x) * progress;
+            const z = path.start.z + (path.end.z - path.start.z) * progress;
+
+            const carMesh = createCarVoxel();
+            carMesh.position.set(x, 0, z);
+
+            if (path.axis === 'z') {
+                carMesh.rotation.y = Math.PI / 2;
+            }
+            if (path.end.x < path.start.x || path.end.z < path.start.z) {
+                carMesh.rotation.y += Math.PI;
+            }
+
+            scene.add(carMesh);
+
+            cars.push({
+                mesh: carMesh,
+                path: path,
+                progress: progress,
+                speed: 0.003 + Math.random() * 0.002,
+                waiting: false,
+                waitTime: 0
+            });
+        }
+
         // ==================== ATUALIZAÇÃO ====================
         function updatePlayer() {
             if (!gameActive) return;
 
-            let moveSpeed = isInCar ? 0.3 : player.speed;
+            // Velocidade base e corrida com Shift
+            let baseSpeed = player.speed;
+            if (keys['shift'] && !isInCar) {
+                baseSpeed *= 2.5; // Correr
+            }
+
+            let moveSpeed = isInCar ? 0.3 : baseSpeed;
             let moving = false;
 
             // Calcular aceleração do carro
@@ -1429,11 +1535,13 @@
                         npc.exploded = true;
                         scene.remove(npc.mesh);
                         npcs.splice(i, 1);
+                        // Spawnar novo NPC
+                        spawnNewNPC();
                     }
                 }
 
                 // Verificar colisão com outros carros
-                for (let i = 0; i < cars.length; i++) {
+                for (let i = cars.length - 1; i >= 0; i--) {
                     const car = cars[i];
                     if (car === currentCar || car.exploded) continue;
 
@@ -1442,6 +1550,9 @@
                         createExplosion(car.mesh.position);
                         car.exploded = true;
                         scene.remove(car.mesh);
+                        cars.splice(i, 1);
+                        // Spawnar novo carro
+                        spawnNewCar();
                     }
                 }
             }
@@ -1666,8 +1777,55 @@
 
             if (timeLeft <= 0) {
                 gameActive = false;
-                showMessage('Tempo esgotado! Pontuação final: ' + score, true);
+                endGame();
             }
+        }
+
+        function endGame() {
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('instructions').style.display = 'none';
+            if (document.pointerLockElement) {
+                document.exitPointerLock();
+            }
+        }
+
+        function restartGame() {
+            // Resetar variáveis
+            score = 0;
+            timeLeft = 60;
+            gameActive = true;
+            isInCar = false;
+            currentCar = null;
+            carSpeed = 0;
+            hasObject = false;
+
+            // Atualizar HUD
+            document.getElementById('score').textContent = '0';
+            document.getElementById('timer').textContent = '60';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('instructions').style.display = 'block';
+            document.getElementById('speedometer').style.display = 'none';
+            document.getElementById('carStatus').style.display = 'none';
+
+            // Resetar posição do jogador
+            player.position.set(0, 0, 0);
+            playerVoxel.position.set(0, 0, 0);
+            playerVoxel.visible = true;
+            mouseX = 0;
+            mouseY = 0;
+
+            // Limpar e recriar missão
+            if (pickupObject && pickupObject.parent) {
+                pickupObject.parent.remove(pickupObject);
+            }
+            if (deliveryNPC) {
+                const oldMarker = deliveryNPC.mesh.getObjectByName('deliveryMarker');
+                if (oldMarker) {
+                    deliveryNPC.mesh.remove(oldMarker);
+                }
+            }
+            createMission();
         }
 
         function showMessage(text, permanent = false) {
