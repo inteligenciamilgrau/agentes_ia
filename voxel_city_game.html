@@ -69,6 +69,53 @@
             padding: 20px;
             border-radius: 10px;
         }
+        #speedometer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            display: none;
+            z-index: 100;
+        }
+        .gauge {
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            border-radius: 50%;
+            border: 5px solid #fff;
+            position: relative;
+        }
+        .gauge-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+        }
+        .gauge-needle {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            width: 3px;
+            height: 50px;
+            background: #ff0000;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(-135deg);
+            transition: transform 0.2s ease;
+        }
+        .gauge-label {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -79,8 +126,15 @@
         <div id="carStatus" style="display:none;">No carro - ESPAÇO para sair</div>
     </div>
     <div id="minimap"></div>
+    <div id="speedometer">
+        <div class="gauge">
+            <div class="gauge-needle" id="needle"></div>
+            <div class="gauge-center"></div>
+            <div class="gauge-label"><span id="speed">0</span> km/h</div>
+        </div>
+    </div>
     <div id="instructions">
-        WASD: Mover | Mouse: Olhar | Scroll: Zoom | ESPAÇO: Entrar/Sair do carro | ESC: Liberar mouse
+        WASD: Mover | Mouse: Olhar | Scroll: Zoom | ESPAÇO: Entrar/Sair | V: Mudar visão | E/Click: Atirar | ESC: Liberar mouse
     </div>
     <div id="message"></div>
 
@@ -93,12 +147,16 @@
         let keys = {};
         let isInCar = false;
         let currentCar = null;
+        let carInternalView = true;
         let mouseX = 0, mouseY = 0;
         let cameraDistance = 15;
         let cameraHeight = 8;
         let score = 0;
         let timeLeft = 60;
         let gameActive = true;
+        let carSpeed = 0;
+        let bullets = [];
+        let explosions = [];
 
         // Objetos do jogo
         let buildings = [];
@@ -175,6 +233,7 @@
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
             document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mousedown', onMouseClick);
             document.addEventListener('wheel', onMouseWheel);
             document.addEventListener('click', requestPointerLock);
             document.addEventListener('pointerlockchange', onPointerLockChange);
@@ -557,17 +616,30 @@
 
         // ==================== CARROS ====================
         function createCars() {
+            // Mão direita: carros andam no lado direito da rua
             const carPaths = [
-                { start: { x: -90, z: -58 }, end: { x: 90, z: -58 }, axis: 'x' },
-                { start: { x: 90, z: -62 }, end: { x: -90, z: -62 }, axis: 'x' },
-                { start: { x: -90, z: -28 }, end: { x: 90, z: -28 }, axis: 'x' },
-                { start: { x: 90, z: -32 }, end: { x: -90, z: -32 }, axis: 'x' },
-                { start: { x: -90, z: 2 }, end: { x: 90, z: 2 }, axis: 'x' },
-                { start: { x: 90, z: -2 }, end: { x: -90, z: -2 }, axis: 'x' },
-                { start: { x: -58, z: -90 }, end: { x: -58, z: 90 }, axis: 'z' },
-                { start: { x: -62, z: 90 }, end: { x: -62, z: -90 }, axis: 'z' },
-                { start: { x: -28, z: -90 }, end: { x: -28, z: 90 }, axis: 'z' },
-                { start: { x: -32, z: 90 }, end: { x: -32, z: -90 }, axis: 'z' }
+                // Ruas horizontais (eixo X)
+                { start: { x: -90, z: -62 }, end: { x: 90, z: -62 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: -58 }, end: { x: -90, z: -58 }, axis: 'x', lane: 'left' },
+                { start: { x: -90, z: -32 }, end: { x: 90, z: -32 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: -28 }, end: { x: -90, z: -28 }, axis: 'x', lane: 'left' },
+                { start: { x: -90, z: -2 }, end: { x: 90, z: -2 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: 2 }, end: { x: -90, z: 2 }, axis: 'x', lane: 'left' },
+                { start: { x: -90, z: 28 }, end: { x: 90, z: 28 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: 32 }, end: { x: -90, z: 32 }, axis: 'x', lane: 'left' },
+                { start: { x: -90, z: 58 }, end: { x: 90, z: 58 }, axis: 'x', lane: 'right' },
+                { start: { x: 90, z: 62 }, end: { x: -90, z: 62 }, axis: 'x', lane: 'left' },
+                // Ruas verticais (eixo Z)
+                { start: { x: -62, z: -90 }, end: { x: -62, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: -58, z: 90 }, end: { x: -58, z: -90 }, axis: 'z', lane: 'left' },
+                { start: { x: -32, z: -90 }, end: { x: -32, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: -28, z: 90 }, end: { x: -28, z: -90 }, axis: 'z', lane: 'left' },
+                { start: { x: -2, z: -90 }, end: { x: -2, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: 2, z: 90 }, end: { x: 2, z: -90 }, axis: 'z', lane: 'left' },
+                { start: { x: 28, z: -90 }, end: { x: 28, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: 32, z: 90 }, end: { x: 32, z: -90 }, axis: 'z', lane: 'left' },
+                { start: { x: 58, z: -90 }, end: { x: 58, z: 90 }, axis: 'z', lane: 'right' },
+                { start: { x: 62, z: 90 }, end: { x: 62, z: -90 }, axis: 'z', lane: 'left' }
             ];
 
             for (let i = 0; i < 12; i++) {
@@ -984,6 +1056,17 @@
                 e.preventDefault();
                 tryEnterExitCar();
             }
+
+            if (e.key.toLowerCase() === 'v' && isInCar) {
+                e.preventDefault();
+                carInternalView = !carInternalView;
+                showMessage(carInternalView ? 'Visão Interna' : 'Visão Externa');
+            }
+
+            if (e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                shoot();
+            }
         }
 
         function onKeyUp(e) {
@@ -992,9 +1075,15 @@
 
         function onMouseMove(e) {
             if (isPointerLocked) {
-                mouseX += e.movementX * 0.002;
+                mouseX -= e.movementX * 0.002; // Invertido para corrigir direção
                 mouseY -= e.movementY * 0.002;
                 mouseY = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, mouseY));
+            }
+        }
+
+        function onMouseClick(e) {
+            if (isPointerLocked && e.button === 0) {
+                shoot();
             }
         }
 
@@ -1015,13 +1104,16 @@
             if (isInCar) {
                 // Sair do carro
                 isInCar = false;
+                carSpeed = 0;
                 currentCar = null;
                 playerVoxel.visible = true;
                 document.getElementById('carStatus').style.display = 'none';
+                document.getElementById('speedometer').style.display = 'none';
                 showMessage('Saiu do carro');
             } else {
                 // Tentar entrar em um carro próximo
                 for (let car of cars) {
+                    if (car.exploded) continue;
                     const distance = player.position.distanceTo(car.mesh.position);
                     if (distance < 5) {
                         isInCar = true;
@@ -1029,9 +1121,136 @@
                         playerVoxel.visible = false;
                         player.position.copy(car.mesh.position);
                         document.getElementById('carStatus').style.display = 'block';
+                        document.getElementById('speedometer').style.display = 'block';
                         showMessage('Entrou no carro');
                         return;
                     }
+                }
+            }
+        }
+
+        // ==================== SISTEMA DE TIRO ====================
+        function shoot() {
+            const bullet = new THREE.Mesh(
+                new THREE.SphereGeometry(0.3, 8, 8),
+                new THREE.MeshBasicMaterial({ color: 0xffff00 })
+            );
+
+            bullet.position.copy(player.position);
+            bullet.position.y = 3;
+
+            const direction = new THREE.Vector3(
+                -Math.sin(mouseX),
+                Math.sin(mouseY),
+                -Math.cos(mouseX)
+            );
+
+            scene.add(bullet);
+
+            bullets.push({
+                mesh: bullet,
+                velocity: direction.multiplyScalar(2),
+                life: 100
+            });
+
+            // Som de tiro (visual feedback)
+            showMessage('BANG!');
+        }
+
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+
+                bullet.mesh.position.add(bullet.velocity);
+                bullet.life--;
+
+                // Verificar colisão com NPCs
+                for (let j = npcs.length - 1; j >= 0; j--) {
+                    const npc = npcs[j];
+                    if (npc.exploded) continue;
+
+                    const dist = bullet.mesh.position.distanceTo(npc.mesh.position);
+                    if (dist < 2) {
+                        createExplosion(npc.mesh.position);
+                        npc.exploded = true;
+                        scene.remove(npc.mesh);
+                        npcs.splice(j, 1);
+                        scene.remove(bullet.mesh);
+                        bullets.splice(i, 1);
+                        break;
+                    }
+                }
+
+                // Verificar colisão com carros
+                for (let j = cars.length - 1; j >= 0; j--) {
+                    const car = cars[j];
+                    if (car === currentCar || car.exploded) continue;
+
+                    const dist = bullet.mesh.position.distanceTo(car.mesh.position);
+                    if (dist < 3) {
+                        createExplosion(car.mesh.position);
+                        car.exploded = true;
+                        scene.remove(car.mesh);
+                        scene.remove(bullet.mesh);
+                        bullets.splice(i, 1);
+                        break;
+                    }
+                }
+
+                // Remover balas antigas
+                if (bullet.life <= 0) {
+                    scene.remove(bullet.mesh);
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        // ==================== SISTEMA DE EXPLOSÃO ====================
+        function createExplosion(position) {
+            const particleCount = 20;
+            const particles = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.5, 0.5, 0.5),
+                    new THREE.MeshBasicMaterial({
+                        color: Math.random() > 0.5 ? 0xff6600 : 0xffff00
+                    })
+                );
+
+                particle.position.copy(position);
+                scene.add(particle);
+
+                const velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.5,
+                    Math.random() * 0.5,
+                    (Math.random() - 0.5) * 0.5
+                );
+
+                particles.push({
+                    mesh: particle,
+                    velocity: velocity,
+                    life: 30
+                });
+            }
+
+            explosions.push(...particles);
+        }
+
+        function updateExplosions() {
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const explosion = explosions[i];
+
+                explosion.mesh.position.add(explosion.velocity);
+                explosion.velocity.y -= 0.02; // Gravidade
+                explosion.life--;
+
+                explosion.mesh.material.opacity = explosion.life / 30;
+                explosion.mesh.material.transparent = true;
+
+                if (explosion.life <= 0) {
+                    scene.remove(explosion.mesh);
+                    explosions.splice(i, 1);
                 }
             }
         }
@@ -1040,8 +1259,32 @@
         function updatePlayer() {
             if (!gameActive) return;
 
-            const moveSpeed = isInCar ? 0.3 : player.speed;
+            let moveSpeed = isInCar ? 0.3 : player.speed;
             let moving = false;
+
+            // Calcular aceleração do carro
+            if (isInCar) {
+                if (keys['w']) {
+                    carSpeed = Math.min(carSpeed + 0.02, 1.2);
+                    moving = true;
+                } else if (keys['s']) {
+                    carSpeed = Math.max(carSpeed - 0.02, -0.6);
+                    moving = true;
+                } else {
+                    carSpeed *= 0.95; // Desaceleração
+                }
+
+                moveSpeed = Math.abs(carSpeed);
+
+                // Atualizar velocímetro
+                const speedKmh = Math.floor(Math.abs(carSpeed) * 100);
+                document.getElementById('speed').textContent = speedKmh;
+
+                const needleRotation = -135 + (speedKmh / 120) * 270;
+                document.getElementById('needle').style.transform = `translateX(-50%) rotate(${needleRotation}deg)`;
+            }
+
+            const oldPosition = player.position.clone();
 
             if (keys['w']) {
                 player.position.x -= Math.sin(mouseX) * moveSpeed;
@@ -1067,6 +1310,35 @@
             // Limitar área de movimento
             player.position.x = Math.max(-95, Math.min(95, player.position.x));
             player.position.z = Math.max(-95, Math.min(95, player.position.z));
+
+            // Verificar atropelamento (apenas quando no carro)
+            if (isInCar) {
+                for (let i = npcs.length - 1; i >= 0; i--) {
+                    const npc = npcs[i];
+                    if (npc.exploded) continue;
+
+                    const dist = player.position.distanceTo(npc.mesh.position);
+                    if (dist < 2) {
+                        createExplosion(npc.mesh.position);
+                        npc.exploded = true;
+                        scene.remove(npc.mesh);
+                        npcs.splice(i, 1);
+                    }
+                }
+
+                // Verificar colisão com outros carros
+                for (let i = 0; i < cars.length; i++) {
+                    const car = cars[i];
+                    if (car === currentCar || car.exploded) continue;
+
+                    const dist = player.position.distanceTo(car.mesh.position);
+                    if (dist < 4) {
+                        createExplosion(car.mesh.position);
+                        car.exploded = true;
+                        scene.remove(car.mesh);
+                    }
+                }
+            }
 
             // Atualizar rotação do jogador
             player.rotation = mouseX;
@@ -1302,19 +1574,32 @@
 
         function updateCamera() {
             if (isInCar) {
-                // Visão interna do carro
                 const carPos = currentCar.mesh.position;
                 const carRot = currentCar.mesh.rotation.y;
 
-                camera.position.x = carPos.x - Math.sin(carRot) * 2;
-                camera.position.y = carPos.y + 3;
-                camera.position.z = carPos.z - Math.cos(carRot) * 2;
+                if (carInternalView) {
+                    // Visão interna do carro
+                    camera.position.x = carPos.x - Math.sin(carRot) * 2;
+                    camera.position.y = carPos.y + 3;
+                    camera.position.z = carPos.z - Math.cos(carRot) * 2;
 
-                camera.lookAt(
-                    carPos.x - Math.sin(carRot) * 10,
-                    carPos.y + 2,
-                    carPos.z - Math.cos(carRot) * 10
-                );
+                    camera.lookAt(
+                        carPos.x - Math.sin(carRot) * 10,
+                        carPos.y + 2,
+                        carPos.z - Math.cos(carRot) * 10
+                    );
+                } else {
+                    // Visão externa do carro (terceira pessoa)
+                    const targetX = carPos.x + Math.sin(carRot) * 15;
+                    const targetY = carPos.y + 10;
+                    const targetZ = carPos.z + Math.cos(carRot) * 15;
+
+                    camera.position.x = targetX;
+                    camera.position.y = targetY;
+                    camera.position.z = targetZ;
+
+                    camera.lookAt(carPos.x, carPos.y + 2, carPos.z);
+                }
             } else {
                 // Câmera terceira pessoa
                 const targetX = player.position.x + Math.sin(mouseX) * cameraDistance;
@@ -1338,6 +1623,8 @@
             updateCars();
             updateTrafficLights();
             updateDayNightCycle();
+            updateBullets();
+            updateExplosions();
             updateCamera();
             updateMinimap();
 
